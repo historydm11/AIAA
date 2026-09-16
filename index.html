@@ -481,7 +481,9 @@ document.querySelectorAll('#v-plan .toggle').forEach(tg=>{
     const pill=tg.closest('tr').querySelectorAll('.pill')[1];
     if(pill){pill.textContent=nowOn?'ON':'OFF';pill.className='pill '+(nowOn?'on':'off');}
     if(tg.dataset.save&&!nowOn){flyBudget(tg,'₩ 92,000 절감 →');shiftBudget(-92000);toast('<b>광고 OFF</b> · 본답변 노출이 확보된 구간입니다. 예산이 절감액으로 이동했습니다. (데모)');}
+    else if(tg.dataset.save&&nowOn){flyBudget(tg,'← ₩ 92,000 재투입');shiftBudget(92000);toast('<b>광고 ON</b> · 절감액에서 예산을 다시 투입합니다. (데모)');}
     else if(tg.dataset.atk&&nowOn){flyBudget(tg,'← ₩ 92,000 투입');shiftBudget(92000);toast('<b>광고 ON</b> · 절감 예산으로 노출을 확보합니다. (데모)');}
+    else if(tg.dataset.atk&&!nowOn){flyBudget(tg,'₩ 92,000 절감 →');shiftBudget(-92000);toast('<b>광고 OFF</b> · 투입 예산이 절감액으로 복귀했습니다. (데모)');}
     else{toast(nowOn?'<b>광고 ON</b> (데모)':'<b>광고 OFF</b> (데모)');}
   };
 });
