@@ -372,6 +372,7 @@ document.querySelectorAll('.nav button').forEach(b=>{
     if(b.dataset.v==='dash')bootDash();
     if(b.dataset.v==='plan'){buildPlanMap();}
     history.replaceState(null,'','#'+b.dataset.v);
+    const sc=document.querySelector('.body');if(sc)sc.scrollTop=0;
   };
 });
 
