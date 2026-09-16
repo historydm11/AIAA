@@ -128,24 +128,6 @@ tbody tr:hover{background:rgba(108,124,255,.05)}
 .design-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .design-strip>div{background:var(--panel2);border-radius:10px;padding:11px 13px;font-size:13.5px}
 .design-strip .muted{margin-bottom:3px}
-/* ---------- ON/OFF 토글 ---------- */
-document.querySelectorAll('#v-plan .toggle').forEach(tg=>{
-  tg.onclick=()=>{
-    tg.classList.toggle('on');
-    const nowOn=tg.classList.contains('on');
-    const pill=tg.closest('tr').querySelectorAll('.pill')[1];
-    if(pill){pill.textContent=nowOn?'ON':'OFF';pill.className='pill '+(nowOn?'on':'off');}
-    if(tg.dataset.save&&!nowOn){flyBudget(tg,'₩ 92,000 절감 →');shiftBudget(-92000);toast('<b>광고 OFF</b> · 본답변 노출이 확보된 구간입니다. 예산이 절감액으로 이동했습니다. (데모)');}
-    else if(tg.dataset.atk&&nowOn){flyBudget(tg,'← ₩ 92,000 투입');shiftBudget(92000);toast('<b>광고 ON</b> · 절감 예산으로 노출을 확보합니다. (데모)');}
-    else{toast(nowOn?'<b>광고 ON</b> (데모)':'<b>광고 OFF</b> (데모)');}
-  };
-});
-
-/* ---------- 일괄 처리 ---------- */
-document.getElementById('btnBulk').onclick=()=>{
-  toast('<b>일괄 등록 시작</b> · 4개 타겟 × 12개 힌트 조합의 캠페인이 생성 대기열에 등록됐습니다. (데모)');
-};
-
 /* ---------- 통합 집행 리스트 ---------- */
 .howto{display:flex;gap:0;align-items:stretch;background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px}
 .howto div{flex:1;padding:12px 16px;font-size:13.5px;position:relative}
@@ -488,6 +470,19 @@ function flyBudget(from,txt){
   requestAnimationFrame(()=>{el.style.transform='translate(180px,-120px)';el.style.opacity=0;});
   setTimeout(()=>el.remove(),1200);
 }
+
+/* ---------- ON/OFF 토글 ---------- */
+document.querySelectorAll('#v-plan .toggle').forEach(tg=>{
+  tg.onclick=()=>{
+    tg.classList.toggle('on');
+    const nowOn=tg.classList.contains('on');
+    const pill=tg.closest('tr').querySelectorAll('.pill')[1];
+    if(pill){pill.textContent=nowOn?'ON':'OFF';pill.className='pill '+(nowOn?'on':'off');}
+    if(tg.dataset.save&&!nowOn){flyBudget(tg,'₩ 92,000 절감 →');shiftBudget(-92000);toast('<b>광고 OFF</b> · 본답변 노출이 확보된 구간입니다. 예산이 절감액으로 이동했습니다. (데모)');}
+    else if(tg.dataset.atk&&nowOn){flyBudget(tg,'← ₩ 92,000 투입');shiftBudget(92000);toast('<b>광고 ON</b> · 절감 예산으로 노출을 확보합니다. (데모)');}
+    else{toast(nowOn?'<b>광고 ON</b> (데모)':'<b>광고 OFF</b> (데모)');}
+  };
+});
 
 /* ---------- 일괄 처리 ---------- */
 document.getElementById('btnBulk').onclick=()=>{
