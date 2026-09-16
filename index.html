@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIAA | 측정 기반 AI 광고 최적화</title>
+<style>
+:root{
+  --bg:#0B0E1A; --panel:#121629; --panel2:#181D35; --line:#232A4D;
+  --txt:#E8EAF6; --sub:#8B93B8; --dim:#5A628C;
+  --acc:#6C7CFF; --acc2:#9B6CFF; --lime:#3DDC97; --amber:#FFB020; --rose:#FF5D7A;
+  --grad:linear-gradient(135deg,#6C7CFF,#9B6CFF);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--txt);font-family:'Pretendard',-apple-system,'Noto Sans KR','Malgun Gothic',sans-serif;font-size:15px;overflow:hidden}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#2A3158;border-radius:4px}
+.app{display:flex;height:100vh}
+/* ---------- 사이드바 ---------- */
+.side{width:244px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:20px 14px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 8px 22px}
+.logo .mark{width:34px;height:34px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;letter-spacing:.5px;color:#fff;box-shadow:0 4px 14px rgba(108,124,255,.45)}
+.logo .name{font-weight:800;font-size:16px;letter-spacing:.2px}
+.logo .name small{display:block;font-weight:500;font-size:12px;color:var(--sub);letter-spacing:1.5px}
+.nav{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.nav button{all:unset;display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:var(--sub);cursor:pointer;font-size:14.5px;font-weight:600;transition:.18s}
+.nav button:hover{background:var(--panel2);color:var(--txt)}
+.nav button.on{background:linear-gradient(90deg,rgba(108,124,255,.18),rgba(155,108,255,.10));color:#fff;box-shadow:inset 2px 0 0 var(--acc)}
+.nav .ico{width:18px;text-align:center;font-size:16px}
+.side .foot{margin-top:auto;padding:12px;border:1px dashed var(--line);border-radius:12px;font-size:12.5px;color:var(--sub);line-height:1.6}
+.side .foot b{color:var(--lime)}
+/* ---------- 메인 ---------- */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 22px;background:rgba(11,14,26,.7)}
+.top h1{font-size:16px;font-weight:800}
+.chip{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(61,220,151,.12);color:var(--lime);border:1px solid rgba(61,220,151,.3)}
+.chip.demo{background:rgba(255,176,32,.1);color:var(--amber);border-color:rgba(255,176,32,.3)}
+.top .right{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--sub);font-size:13px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff}
+.body{flex:1;overflow-y:auto;padding:22px}
+.view{display:none;animation:fadeUp .45s ease}
+.view.on{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ---------- 카드 공통 ---------- */
+.grid{display:grid;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h3{font-size:14px;font-weight:700;color:var(--sub);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.card h3 .live{width:7px;height:7px;border-radius:50%;background:var(--lime);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,151,.5)}70%{box-shadow:0 0 0 7px rgba(61,220,151,0)}100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}}
+.kpis{grid-template-columns:repeat(4,1fr)}
+.kpi .num{font-size:29px;font-weight:800;letter-spacing:-.5px;margin:5px 0 2px}
+.kpi .num small{font-size:16px;color:var(--sub);font-weight:600}
+.kpi .delta{font-size:13px;font-weight:700}
+.up{color:var(--lime)}.down{color:var(--rose)}.flat{color:var(--sub)}
+/* ---------- 언급 현황 바 ---------- */
+.map-row{display:grid;grid-template-columns:128px 1fr 68px 86px;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.map-row:last-child{border-bottom:none}
+.p-name{font-weight:700;font-size:14px}
+.p-name small{display:block;color:var(--dim);font-weight:500;font-size:12px;margin-top:2px}
+.bar{height:11px;background:#1B2140;border-radius:8px;overflow:hidden;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:8px;background:var(--grad);transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.bar i.good{background:linear-gradient(90deg,#2BB681,#3DDC97)}
+.bar i.bad{background:linear-gradient(90deg,#E0485F,#FF5D7A)}
+.pct{font-weight:800;font-size:16px;text-align:right}
+.tag{font-size:12px;font-weight:800;text-align:center;padding:5px 0;border-radius:8px}
+.tag.strong{background:rgba(61,220,151,.13);color:var(--lime)}
+.tag.weak{background:rgba(255,93,122,.13);color:var(--rose)}
+.tag.mid{background:rgba(255,176,32,.12);color:var(--amber)}
+/* ---------- 버튼 ---------- */
+.btn{all:unset;cursor:pointer;font-weight:700;font-size:13.5px;padding:9px 16px;border-radius:10px;transition:.15s;text-align:center}
+.btn.pri{background:var(--grad);color:#fff;box-shadow:0 4px 14px rgba(108,124,255,.35)}
+.btn.pri:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(108,124,255,.5)}
+.btn.ghost{border:1px solid var(--line);color:var(--sub)}
+.btn.ghost:hover{color:var(--txt);border-color:var(--acc)}
+/* ---------- 로그 ---------- */
+.log{font-family:'SF Mono',Consolas,monospace;font-size:12px;line-height:1.85;color:var(--sub);overflow:hidden}
+.log div{opacity:0;animation:logIn .4s forwards}
+@keyframes logIn{to{opacity:1}}
+.log .ok{color:var(--lime)}.log .no{color:var(--rose)}.log .q{color:#AEB6E8}
+.dash-log{max-height:112px}
+/* ---------- 표 ---------- */
+table{width:100%;border-collapse:collapse}
+th{font-size:12.5px;color:var(--dim);font-weight:700;text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);letter-spacing:.5px}
+td{padding:10px 9px;border-bottom:1px solid var(--line);font-size:13.5px}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(108,124,255,.05)}
+.pill{font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;display:inline-block}
+.pill.on{background:rgba(61,220,151,.14);color:var(--lime)}
+.pill.off{background:#1B2140;color:var(--dim)}
+.pill.warn{background:rgba(255,176,32,.13);color:var(--amber)}
+.toggle{width:40px;height:22px;border-radius:20px;background:#242B52;position:relative;cursor:pointer;transition:.25s;flex-shrink:0}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#7A83AE;top:3px;left:3px;transition:.25s}
+.toggle.on{background:var(--lime)}
+.toggle.on::after{left:21px;background:#fff}
+.rx{font-size:13px;font-weight:700}
+.rx.save{color:var(--lime)}.rx.def{color:var(--amber)}.rx.atk{color:var(--rose)}
+.num-r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* ---------- 광고 집행 뷰 ---------- */
+.persona-pick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.pcard{background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:.2s;text-align:center}
+.pcard:hover{border-color:var(--acc);transform:translateY(-2px)}
+.pcard.sel{border-color:var(--acc);background:linear-gradient(160deg,rgba(108,124,255,.14),rgba(155,108,255,.08));box-shadow:0 6px 20px rgba(108,124,255,.25)}
+.pcard .em{font-size:24px}
+.pcard .nm{font-weight:800;margin:6px 0 3px;font-size:14px}
+.pcard .st{font-size:12.5px;color:var(--sub)}
+.hint{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:12px;padding:12px 14px;margin-top:10px;opacity:0;transform:translateX(-8px);animation:slideIn .45s forwards}
+@keyframes slideIn{to{opacity:1;transform:none}}
+.hint .h-t{font-size:12.5px;color:var(--acc);font-weight:800;letter-spacing:.5px;margin-bottom:5px}
+.hint p{font-size:13.5px;line-height:1.55}
+.hint .h-src{font-size:12px;color:var(--dim);margin-top:6px}
+.sec-title{font-size:15px;font-weight:800;margin:2px 0 10px}
+.step-num{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--grad);color:#fff;font-size:12.5px;font-weight:800;align-items:center;justify-content:center;margin-right:7px;vertical-align:-3px}
+/* ---------- 대시보드 확장 ---------- */
+.sub-block{margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+.sub-t{font-size:12.5px;font-weight:800;color:var(--dim);letter-spacing:.5px;margin-bottom:8px}
+.mini-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:2px}
+.tile i{width:18px;height:4px;border-radius:2px;display:block;margin-bottom:3px}
+.tile b{font-size:16px;font-weight:800}
+.tile span:last-child{font-size:12px;color:var(--sub);font-weight:600}
+.mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mini-stats div{background:var(--panel2);border-radius:8px;padding:8px 5px;text-align:center}
+.mini-stats span{display:block;font-size:12px;color:var(--dim);margin-bottom:3px}
+.mini-stats b{font-size:13px}
+.comp-row{display:grid;grid-template-columns:74px 1fr 46px;align-items:center;gap:10px;margin-bottom:7px;font-size:13px}
+.comp-row .bar{height:9px}
+.comp-row b{text-align:right;font-size:13px}
+.comp-row .nm{color:var(--sub);font-weight:600}
+.design-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.design-strip>div{background:var(--panel2);border-radius:10px;padding:11px 13px;font-size:13.5px}
+.design-strip .muted{margin-bottom:3px}
+/* ---------- ON/OFF 토글 ---------- */
+document.querySelectorAll('#v-plan .toggle').forEach(tg=>{
+  tg.onclick=()=>{
+    tg.classList.toggle('on');
+    const nowOn=tg.classList.contains('on');
+    const pill=tg.closest('tr').querySelectorAll('.pill')[1];
+    if(pill){pill.textContent=nowOn?'ON':'OFF';pill.className='pill '+(nowOn?'on':'off');}
+    if(tg.dataset.save&&!nowOn){flyBudget(tg,'₩ 92,000 절감 →');shiftBudget(-92000);toast('<b>광고 OFF</b> · 본답변 노출이 확보된 구간입니다. 예산이 절감액으로 이동했습니다. (데모)');}
+    else if(tg.dataset.atk&&nowOn){flyBudget(tg,'← ₩ 92,000 투입');shiftBudget(92000);toast('<b>광고 ON</b> · 절감 예산으로 노출을 확보합니다. (데모)');}
+    else{toast(nowOn?'<b>광고 ON</b> (데모)':'<b>광고 OFF</b> (데모)');}
+  };
+});
+
+/* ---------- 일괄 처리 ---------- */
+document.getElementById('btnBulk').onclick=()=>{
+  toast('<b>일괄 등록 시작</b> · 4개 타겟 × 12개 힌트 조합의 캠페인이 생성 대기열에 등록됐습니다. (데모)');
+};
+
+/* ---------- 통합 집행 리스트 ---------- */
+.howto{display:flex;gap:0;align-items:stretch;background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.howto div{flex:1;padding:12px 16px;font-size:13.5px;position:relative}
+.howto div b{display:block;font-size:12.5px;letter-spacing:.5px;margin-bottom:3px}
+.howto div:nth-child(1) b{color:var(--lime)} .howto div:nth-child(2) b{color:var(--acc)} .howto div:nth-child(3) b{color:var(--amber)}
+.howto div+div{border-left:1px solid var(--line)}
+.xhead,.xrow{display:grid;grid-template-columns:24px 1.15fr 210px 74px 64px 250px 56px;gap:12px;align-items:center}
+.xhead{font-size:12px;color:var(--dim);font-weight:800;letter-spacing:.5px;padding:6px;border-bottom:1px solid var(--line)}
+.xrow{padding:13px 6px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+.xrow:hover{background:rgba(108,124,255,.06)}
+.xrow .ar{color:var(--dim);font-size:12.5px;transition:transform .25s;text-align:center}
+.xrow.open .ar{transform:rotate(90deg);color:var(--acc)}
+.xrow .tnm{font-weight:800;font-size:14px}
+.xrow .tnm small{display:block;font-weight:500;font-size:12px;color:var(--dim);margin-top:2px}
+.gauge .g1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.gauge .g1 b{font-size:16px;font-weight:800}
+.gauge .g1 span{font-size:12px;font-weight:700}
+.gauge .bar{height:8px}
+.sug{font-size:13px;font-weight:700;line-height:1.5}
+.sug small{display:block;font-weight:500;color:var(--dim);font-size:12px}
+.sug.save{color:var(--lime)} .sug.atk{color:var(--rose)} .sug.hold{color:var(--amber)} .sug.opt{color:var(--sub)}
+.xrow .money{font-size:13px;font-weight:700;text-align:right}
+.texp{overflow:hidden;max-height:0;transition:max-height .4s ease,margin .4s ease;background:var(--panel2);border-radius:12px;margin:0 6px;border:1px solid transparent}
+.texp.open{max-height:640px;margin:8px 6px 12px;border-color:var(--line)}
+.texp-in{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;padding:14px}
+.texp h5{font-size:12px;color:var(--dim);font-weight:800;letter-spacing:.5px;margin-bottom:8px}
+.pr-li{font-size:13px;padding:7px 6px;border-bottom:1px dashed var(--line);display:flex;gap:9px;align-items:flex-start;color:#C7CDEA}
+.pr-li:last-child{border-bottom:none}
+.pr-li i{font-style:normal;flex-shrink:0;font-weight:800}
+.pr-li .ok{color:var(--lime)} .pr-li .no{color:var(--rose)}
+/* ---------- 토스트 ---------- */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--panel2);border:1px solid var(--acc);border-radius:12px;padding:14px 18px;font-size:14px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateY(80px);opacity:0;transition:.35s;z-index:99}
+.toast.show{transform:none;opacity:1}
+.toast b{color:var(--lime)}
+.budget-fly{position:fixed;font-weight:800;font-size:14px;color:var(--amber);pointer-events:none;z-index:98;transition:all 1.1s cubic-bezier(.3,.7,.3,1);white-space:nowrap}
+.muted{color:var(--sub);font-size:13px;line-height:1.6}
+.demo-note{font-size:12px;color:var(--dim);margin-top:14px;text-align:center}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 사이드바 -->
+  <aside class="side">
+    <div class="logo">
+      <div class="mark">A2A</div>
+      <div class="name">AIAA<small>AI ADS ASSISTANT</small></div>
+    </div>
+    <nav class="nav">
+      <button class="on" data-v="dash"><span class="ico">◧</span> 대시보드 <span style="margin-left:auto;font-size:12px" class="up">LIVE</span></button>
+      <button data-v="plan"><span class="ico">➤</span> 광고 집행</button>
+    </nav>
+    <div class="foot">
+      <b>측정 기반 광고 집행·최적화</b><br>
+      캠페인 예산을 데이터로 운영합니다.<br>
+      <span style="color:#3A4270">DEMO · 예시 데이터</span>
+    </div>
+  </aside>
+
+  <!-- 메인 -->
+  <div class="main">
+    <div class="top">
+      <h1 id="vTitle">대시보드</h1>
+      <span class="chip">측정 가동 중</span>
+      <span class="chip demo">데모 · 헬씨온 영양제몰 (예시)</span>
+      <div class="right"><span>2026.09.16 06:00 측정 기준</span><div class="avatar">오</div></div>
+    </div>
+
+    <div class="body">
+
+      <!-- ═══════ 대시보드 (통합) ═══════ -->
+      <section class="view on" id="v-dash">
+        <div class="grid kpis">
+          <div class="card kpi"><h3>전체 AI 언급률</h3><div class="num"><span data-cnt="23.4" data-dec="1">0</span><small> %</small></div><div class="delta up">▲ 4.2%p 지난주 대비</div></div>
+          <div class="card kpi"><h3>이번 주 측정 질문</h3><div class="num"><span data-cnt="640">0</span><small> 회</small></div><div class="delta flat">타겟 4종 × 40문항 × 4엔진</div></div>
+          <div class="card kpi"><h3>활성 광고</h3><div class="num"><span data-cnt="5">0</span><small> 개</small></div><div class="delta up">노출 41.2K · 클릭 1,270 · CTR 3.1%</div></div>
+          <div class="card kpi"><h3>이번 달 최적화 절감액</h3><div class="num">₩<span data-cnt="184000">0</span></div><div class="delta up">캠페인 2건 OFF 최적화</div></div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.35fr 1fr 1fr;margin-top:14px">
+          <div class="card">
+            <h3><span class="live"></span> 타겟별 언급 현황</h3>
+            <div id="mapBars"></div>
+            <div class="sub-block">
+              <div class="sub-t">경쟁 비교 · 전체 언급률</div>
+              <div id="compBars"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>언급률 추이 · 8주</h3>
+            <svg viewBox="0 0 300 150" width="100%" id="miniTrend">
+              <line x1="8" y1="130" x2="292" y2="130" stroke="#232A4D"/>
+              <line x1="8" y1="85" x2="292" y2="85" stroke="#1A2040" stroke-dasharray="3 4"/>
+              <line x1="8" y1="40" x2="292" y2="40" stroke="#1A2040" stroke-dasharray="3 4"/>
+              <polyline id="mline" points="" fill="none" stroke="url(#g1)" stroke-width="3" stroke-linecap="round"/>
+              <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6C7CFF"/><stop offset="1" stop-color="#9B6CFF"/></linearGradient></defs>
+            </svg>
+            <div class="muted" style="text-align:center">15.1% → <b class="up">23.4%</b> · 캠페인 ON 시점부터 상승</div>
+            <div class="sub-block">
+              <div class="sub-t">캠페인 성과 요약</div>
+              <div class="mini-stats">
+                <div><span>노출</span><b>41,200</b></div>
+                <div><span>클릭</span><b>1,270</b></div>
+                <div><span>CTR</span><b>3.1%</b></div>
+                <div><span>CPC</span><b>₩328</b></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>엔진별 언급률</h3>
+            <div class="mini-tiles">
+              <div class="tile"><i style="background:#3DDC97"></i><b><span data-cnt="26.7" data-dec="1">0</span>%</b><span>ChatGPT</span></div>
+              <div class="tile"><i style="background:#6C7CFF"></i><b><span data-cnt="21.4" data-dec="1">0</span>%</b><span>Gemini</span></div>
+              <div class="tile"><i style="background:#FFB020"></i><b><span data-cnt="24.0" data-dec="1">0</span>%</b><span>Perplexity</span></div>
+              <div class="tile"><i style="background:#FF5D7A"></i><b><span data-cnt="19.2" data-dec="1">0</span>%</b><span>Claude</span></div>
+            </div>
+            <div class="sub-block">
+              <div class="sub-t"><span class="live" style="display:inline-block;vertical-align:1px"></span> 실시간 측정</div>
+              <div class="log dash-log" id="dashLog"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.35fr 1fr 1fr;margin-top:14px">
+          <div class="card">
+            <h3>질문 단위 언급 상세 <span style="font-weight:500;color:var(--dim)">5060 · 발췌</span></h3>
+            <table>
+              <thead><tr><th>사용자 질문 (실측 샘플)</th><th>ChatGPT</th><th>Gemini</th><th>언급률</th></tr></thead>
+              <tbody>
+                <tr><td>"부모님 관절에 좋은 영양제 있나?"</td><td class="up">●</td><td class="up">●</td><td><b>75%</b></td></tr>
+                <tr><td>"갱년기에 먹을 만한 영양제 뭐가 좋아?"</td><td class="up">●</td><td class="down">○</td><td><b>50%</b></td></tr>
+                <tr><td>"환갑 선물로 홍삼 말고 다른 거"</td><td class="up">●</td><td class="up">●</td><td><b>67%</b></td></tr>
+                <tr><td>"혈압 있는 사람 영양제 괜찮아?"</td><td class="down">○</td><td class="down">○</td><td class="down"><b>0%</b></td></tr>
+                </tbody>
+            </table>
+            <div class="muted" style="margin-top:8px">● 본답변 언급 · ○ 미언급.<br>미언급 질문은 집행 후보로 자동 분류됩니다.</div>
+          </div>
+          <div class="card">
+            <h3>월간 리포트 요약</h3>
+            <table>
+              <tbody>
+                <tr><td class="muted">광고 노출</td><td style="text-align:right"><b>41,200</b></td></tr>
+                <tr><td class="muted">클릭 / CTR</td><td style="text-align:right"><b>1,270 / 3.1%</b></td></tr>
+                <tr><td class="muted">광고비</td><td style="text-align:right"><b>₩ 416,000</b></td></tr>
+                <tr><td class="muted">언급률 변화</td><td style="text-align:right" class="up"><b>15.1% → 23.4%</b></td></tr>
+                <tr><td class="muted">캠페인 OFF 최적화</td><td style="text-align:right" class="up"><b>2건 (₩184,000 절감)</b></td></tr>
+              </tbody>
+            </table>
+            <button class="btn pri" style="width:100%;margin-top:12px">월간 리포트 다운로드</button>
+            <div class="muted" style="margin-top:9px">광고 성과(공식 지표)와 언급률 변화(자체 실측)를 단일 리포트로 제공합니다.<br>광고주 보고용 양식입니다.</div>
+          </div>
+          <div class="card">
+            <h3>추천 액션</h3>
+            <div class="hint" style="animation-delay:.2s"><div class="h-t">📈 성과 극대화</div><p><b>5060</b> 언급률 41%.<br>광고를 더해 구매 전환을 극대화하세요.</p></div>
+            <div class="hint" style="animation-delay:.45s"><div class="h-t">🎯 커버리지 확보</div><p><b>2030</b> 언급률 9%.<br>광고로 노출을 확보하고 오가닉 공략을 병행하세요.</p></div>
+            <div class="hint" style="animation-delay:.7s"><div class="h-t">✂️ 예산 절감</div><p><b>4050 피로회복</b> 오가닉 언급 시작.<br>OFF 후 취약 구간 재배분을 추천합니다.</p></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3>측정 설계</h3>
+          <div class="design-strip">
+            <div><div class="muted">타겟</div><b>4종</b> · 2030 자취, 3040 육아, 4050 직장, 5060 건강</div>
+            <div><div class="muted">질문 세트</div><b>40문항</b> · 타겟별 예상 질문 자동 생성</div>
+            <div><div class="muted">측정 엔진</div><b>4종</b> · ChatGPT, Gemini, Perplexity, Claude</div>
+            <div><div class="muted">주기</div><b>주 4회</b> · 매회 동일 조건</div>
+          </div>
+        </div>
+        <div class="demo-note">본 화면은 서비스 컨셉 데모이며 모든 수치는 예시입니다.</div>
+      </section>
+
+      <!-- ═══════ 광고 집행 ═══════ -->
+      <section class="view" id="v-plan">
+        <div class="grid" style="grid-template-columns:1fr 1.3fr">
+          <div class="card">
+            <div class="sec-title">예산 배분 현황</div>
+            <div style="margin:8px 0 4px;font-size:13px;color:var(--sub)">월 광고 예산</div>
+            <div style="font-size:26px;font-weight:800">₩ 600,000</div>
+            <div style="margin-top:14px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>집행 예산</span><b id="bSpend">₩ 416,000</b></div>
+              <div class="bar"><i id="barSpend" style="width:69%"></i></div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin:13px 0 6px"><span class="up">최적화 절감액</span><b class="up" id="bSave">₩ 184,000</b></div>
+              <div class="bar"><i class="good" id="barSave" style="width:31%"></i></div>
+            </div>
+            <div class="muted" style="margin-top:13px">언급률이 오른 캠페인을 OFF하면 예산이 절감액으로 이동하고, 언급이 없는 구간을 ON하면 절감액에서 투입됩니다.</div>
+          </div>
+          <div class="card">
+            <div class="sec-title">광고 지표 요약</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--dim)">노출 (Imps)</span><span style="font-size:12px;font-weight:700;color:#3DDC97">▲ 18%</span></div><div style="font-size:20px;font-weight:800;margin-top:4px">41,200</div><svg viewBox="0 0 92 26" style="width:100%;height:26px;margin-top:8px" preserveAspectRatio="none"><polygon points="0,26 0,22 15,19 31,20 46,14 61,12 77,8 92,4 92,26" fill="#6C7CFF" opacity=".12"/><polyline points="0,22 15,19 31,20 46,14 61,12 77,8 92,4" fill="none" stroke="#6C7CFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--dim)">클릭 (Clicks)</span><span style="font-size:12px;font-weight:700;color:#3DDC97">▲ 24%</span></div><div style="font-size:20px;font-weight:800;margin-top:4px">1,270</div><svg viewBox="0 0 92 26" style="width:100%;height:26px;margin-top:8px" preserveAspectRatio="none"><polygon points="0,26 0,23 15,21 31,17 46,18 61,12 77,9 92,3 92,26" fill="#6C7CFF" opacity=".12"/><polyline points="0,23 15,21 31,17 46,18 61,12 77,9 92,3" fill="none" stroke="#6C7CFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--dim)">CTR</span><span style="font-size:12px;font-weight:700;color:#3DDC97">▲ 0.4%p</span></div><div style="font-size:20px;font-weight:800;margin-top:4px">3.1%</div><svg viewBox="0 0 92 26" style="width:100%;height:26px;margin-top:8px" preserveAspectRatio="none"><polygon points="0,26 0,20 15,21 31,16 46,17 61,11 77,10 92,6 92,26" fill="#3DDC97" opacity=".12"/><polyline points="0,20 15,21 31,16 46,17 61,11 77,10 92,6" fill="none" stroke="#3DDC97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--dim)">CPC</span><span style="font-size:12px;font-weight:700;color:#3DDC97">▼ 9%</span></div><div style="font-size:20px;font-weight:800;margin-top:4px">₩328</div><svg viewBox="0 0 92 26" style="width:100%;height:26px;margin-top:8px" preserveAspectRatio="none"><polyline points="0,6 15,9 31,8 46,13 61,12 77,17 92,20" fill="none" stroke="#3DDC97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--dim)">CPM</span><span style="font-size:12px;font-weight:700;color:#3DDC97">▼ 6%</span></div><div style="font-size:20px;font-weight:800;margin-top:4px">₩10,100</div><svg viewBox="0 0 92 26" style="width:100%;height:26px;margin-top:8px" preserveAspectRatio="none"><polyline points="0,7 15,6 31,11 46,10 61,14 77,15 92,19" fill="none" stroke="#3DDC97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              <div style="background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px 14px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--dim)">활성 광고</span><span style="font-size:12px;font-weight:700;color:#6C7CFF">2건 최적화 OFF</span></div><div style="font-size:20px;font-weight:800;margin-top:4px">5개</div><svg viewBox="0 0 92 26" style="width:100%;height:26px;margin-top:8px" preserveAspectRatio="none"><polyline points="0,18 20,18 20,10 45,10 45,14 70,14 70,6 92,6" fill="none" stroke="#6C7CFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <div class="muted" style="margin-top:12px">OpenAI 공식 리포트 지표 기준 · 최근 4주 추이 · 전월 대비 등락 (데모 수치)</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div class="sec-title" style="margin:0">캠페인 운영 제안 · 측정 결과 기반 ON/OFF</div>
+            <button class="btn ghost" id="btnBulk">전체 일괄 등록</button>
+          </div>
+          <table>
+            <thead><tr><th>광고 (사용자 상황)</th><th>본답변</th><th>상태</th><th style="text-align:right">Imps</th><th style="text-align:right">Clicks</th><th style="text-align:right">CTR</th><th style="text-align:right">CPC</th><th style="text-align:right">CPM</th><th>운영 제안</th><th style="text-align:center">ON/OFF</th></tr></thead>
+            <tbody>
+              <tr><td>피로회복 영양제 찾는 4050</td><td><span class="pill on">나옴 ●</span></td><td><span class="pill on">ON</span></td><td class="num-r">12,400</td><td class="num-r">347</td><td class="num-r">2.8%</td><td class="num-r">₩312</td><td class="num-r">₩8,700</td><td class="rx save">OFF 권장 · 오가닉 우위 전환</td><td style="text-align:center"><div class="toggle on" data-save="1" style="margin:0 auto"></div></td></tr>
+              <tr><td>부모님 선물 고르는 5060 자녀</td><td><span class="pill on">나옴 ●</span></td><td><span class="pill off">OFF</span></td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="rx" style="color:var(--lime)">유지 · 오가닉 우위 구간</td><td style="text-align:center"><div class="toggle" style="margin:0 auto"></div></td></tr>
+              <tr><td>수면 고민 말하는 2030</td><td><span class="pill warn">안 나옴 ○</span></td><td><span class="pill on">ON</span></td><td class="num-r">9,800</td><td class="num-r">333</td><td class="num-r">3.4%</td><td class="num-r">₩298</td><td class="num-r">₩10,100</td><td class="rx def">ON 유지 · 취약 구간 보완 중</td><td style="text-align:center"><div class="toggle on" style="margin:0 auto"></div></td></tr>
+              <tr><td>운동 시작한 2030 자취생</td><td><span class="pill warn">안 나옴 ○</span></td><td><span class="pill off">OFF</span></td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="rx atk">ON 권장 · 절감 예산 투입 (취약 구간)</td><td style="text-align:center"><div class="toggle" data-atk="1" style="margin:0 auto"></div></td></tr>
+              <tr><td>다이어트 보조제 찾는 2030 여성</td><td><span class="pill warn">안 나옴 ○</span></td><td><span class="pill on">ON</span></td><td class="num-r">7,600</td><td class="num-r">160</td><td class="num-r">2.1%</td><td class="num-r">₩355</td><td class="num-r">₩7,500</td><td class="rx def">ON 유지 · 취약 구간 보완 중</td><td style="text-align:center"><div class="toggle on" style="margin:0 auto"></div></td></tr>
+              <tr><td>눈 피로 호소하는 3040 직장인</td><td><span class="pill on">나옴 ●</span></td><td><span class="pill on">ON</span></td><td class="num-r">6,900</td><td class="num-r">131</td><td class="num-r">1.9%</td><td class="num-r">₩402</td><td class="num-r">₩7,600</td><td class="rx save">OFF 권장 · 오가닉 우위 전환</td><td style="text-align:center"><div class="toggle on" data-save="1" style="margin:0 auto"></div></td></tr>
+              <tr><td>임산부 영양제 문의하는 3040</td><td><span class="pill on">나옴 ●</span></td><td><span class="pill off">OFF</span></td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="rx" style="color:var(--lime)">유지 · 오가닉 우위 구간</td><td style="text-align:center"><div class="toggle" style="margin:0 auto"></div></td></tr>
+              <tr><td>수험생 집중력 찾는 4050 학부모</td><td><span class="pill warn">안 나옴 ○</span></td><td><span class="pill off">OFF</span></td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="rx atk">ON 권장 · 절감 예산 투입 (취약 구간)</td><td style="text-align:center"><div class="toggle" data-atk="1" style="margin:0 auto"></div></td></tr>
+              <tr><td>탈모 영양제 찾는 3040 남성</td><td><span class="pill warn">안 나옴 ○</span></td><td><span class="pill on">ON</span></td><td class="num-r">5,200</td><td class="num-r">130</td><td class="num-r">2.5%</td><td class="num-r">₩344</td><td class="num-r">₩8,600</td><td class="rx def">ON 유지 · 취약 구간 보완 중</td><td style="text-align:center"><div class="toggle on" style="margin:0 auto"></div></td></tr>
+              <tr><td>환절기 면역력 챙기는 5060</td><td><span class="pill on">나옴 ●</span></td><td><span class="pill off">OFF</span></td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="num-r">—</td><td class="rx" style="color:var(--lime)">유지 · 오가닉 우위 구간</td><td style="text-align:center"><div class="toggle" style="margin:0 auto"></div></td></tr>
+            </tbody>
+          </table>
+          <div class="muted" style="margin-top:10px">본답변에 나오는 광고는 OFF, 안 나오는 구간은 ON이 제안됩니다. 토글을 누르면 예산이 재배분됩니다. (데모)</div>
+        </div>
+        <div class="demo-note">본 화면은 서비스 컨셉 데모이며 실제 광고 등록은 이뤄지지 않습니다.</div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- 내비게이션 ---------- */
+const titles={dash:'대시보드',plan:'광고 집행'};
+document.querySelectorAll('.nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+    document.getElementById('v-'+b.dataset.v).classList.add('on');
+    document.getElementById('vTitle').textContent=titles[b.dataset.v];
+    if(b.dataset.v==='dash')bootDash();
+    if(b.dataset.v==='plan'){buildPlanMap();}
+  };
+});
+
+/* ---------- 카운트업 ---------- */
+function runCounters(){
+  document.querySelectorAll('[data-cnt]').forEach(el=>{
+    const target=parseFloat(el.dataset.cnt),dec=parseInt(el.dataset.dec||0);
+    const t0=performance.now(),dur=1300;
+    function tick(t){
+      const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);
+      el.textContent=(target*e).toLocaleString('ko-KR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+      if(p<1)requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* ---------- 타겟별 언급 현황 ---------- */
+const personas=[
+  {n:'2030 자취·직장인',s:'수면 · 운동 · 다이어트 질문',v:9,cls:'bad',tag:['취약','weak']},
+  {n:'3040 육아 가정',s:'아이 · 가족 건강 질문',v:17,cls:'',tag:['유사','mid']},
+  {n:'4050 갱년기·직장',s:'피로 · 갱년기 질문',v:22,cls:'',tag:['유사','mid']},
+  {n:'5060 건강관리',s:'관절 · 혈압 · 선물 질문',v:41,cls:'good',tag:['우위','strong']},
+];
+function buildMap(){
+  const w=document.getElementById('mapBars');w.innerHTML='';
+  personas.forEach(p=>{
+    w.insertAdjacentHTML('beforeend',
+      `<div class="map-row"><div class="p-name">${p.n}<small>${p.s}</small></div>
+       <div class="bar"><i class="${p.cls}" data-w="${p.v*2}"></i></div>
+       <div class="pct">${p.v}%</div><div class="tag ${p.tag[1]}">${p.tag[0]}</div></div>`);
+  });
+  setTimeout(()=>w.querySelectorAll('.bar i').forEach(el=>el.style.width=el.dataset.w+'%'),80);
+}
+function buildComp(){
+  const data=[['우리 브랜드',23.4,'good'],['경쟁 A',31.2,''],['경쟁 B',18.9,'']];
+  const w=document.getElementById('compBars');if(!w)return;w.innerHTML='';
+  data.forEach(d=>{
+    w.insertAdjacentHTML('beforeend',`<div class="comp-row"><span class="nm">${d[0]}</span>
+      <div class="bar"><i class="${d[2]}" data-w="${d[1]*2.4}" style="${d[2]?'':'background:#3A4270'}"></i></div><b>${d[1]}%</b></div>`);
+  });
+  setTimeout(()=>w.querySelectorAll('.bar i').forEach(el=>el.style.width=el.dataset.w+'%'),100);
+}
+function drawMini(){
+  const d=[15.1,15.8,17.2,18.0,19.6,21.1,22.5,23.4];
+  const l=document.getElementById('mline');if(!l)return;
+  l.setAttribute('points',d.map((v,i)=>`${8+i*(284/7)},${130-v*3.8}`).join(' '));
+  const len=l.getTotalLength();l.style.strokeDasharray=len;l.style.strokeDashoffset=len;
+  l.getBoundingClientRect();l.style.transition='stroke-dashoffset 1.4s ease';l.style.strokeDashoffset=0;
+}
+
+/* ---------- 실시간 측정 로그 ---------- */
+const logLines=[
+  ['q','[5060] "부모님 관절에 좋은 영양제 있나?" → ChatGPT'],['ok','  └ 본답변 언급 ● (2번째 브랜드)'],
+  ['q','[2030] "요즘 잠을 잘 못 자는데 뭐 먹지?" → Gemini'],['no','  └ 언급 없음 ○ → 집행 후보'],
+  ['q','[4050] "갱년기에 좋은 영양제 뭐가 좋아?" → ChatGPT'],['ok','  └ 본답변 언급 ● (첫 브랜드)'],
+  ['q','[3040] "아이 면역력에 뭐가 좋을까?" → Perplexity'],['no','  └ 언급 없음 ○ → 집행 후보'],
+  ['q','[5060] "환갑 선물로 홍삼 말고 다른 거" → Claude'],['ok','  └ 본답변 언급 ●'],
+];
+let dashLogT=null,dashLogI=0;
+function startDashLog(){
+  const el=document.getElementById('dashLog');if(!el)return;
+  clearInterval(dashLogT);
+  dashLogT=setInterval(()=>{
+    el.insertAdjacentHTML('beforeend',`<div class="${logLines[dashLogI%logLines.length][0]}">${logLines[dashLogI%logLines.length][1]}</div>`);
+    while(el.children.length>6)el.removeChild(el.firstChild);
+    dashLogI++;
+  },900);
+}
+
+/* ---------- 광고 집행: 타겟 요약 + 운영 제안 표 ---------- */
+function buildPlanMap(){
+  const w=document.getElementById('planMap');if(!w)return;w.innerHTML='';
+  personas.forEach(p=>{
+    w.insertAdjacentHTML('beforeend',
+      `<div class="map-row"><div class="p-name">${p.n}<small>${p.s}</small></div>
+       <div class="bar"><i class="${p.cls}" data-w="${p.v*2}"></i></div>
+       <div class="pct">${p.v}%</div><div class="tag ${p.tag[1]}">${p.tag[0]}</div></div>`);
+  });
+  setTimeout(()=>w.querySelectorAll('.bar i').forEach(el=>el.style.width=el.dataset.w+'%'),80);
+}
+buildPlanMap();
+
+/* ---------- 예산 이동 ---------- */
+let spend=416000,save=184000;
+function shiftBudget(d){
+  spend+=d;save-=d;
+  document.getElementById('bSpend').textContent='₩ '+spend.toLocaleString();
+  document.getElementById('bSave').textContent='₩ '+save.toLocaleString();
+  document.getElementById('barSpend').style.width=(spend/6000)+'%';
+  document.getElementById('barSave').style.width=(save/6000)+'%';
+}
+function flyBudget(from,txt){
+  const r=from.getBoundingClientRect();
+  const el=document.createElement('div');el.className='budget-fly';el.textContent=txt;
+  el.style.left=(r.left-90)+'px';el.style.top=(r.top-6)+'px';document.body.appendChild(el);
+  requestAnimationFrame(()=>{el.style.transform='translate(180px,-120px)';el.style.opacity=0;});
+  setTimeout(()=>el.remove(),1200);
+}
+
+/* ---------- 일괄 처리 ---------- */
+document.getElementById('btnBulk').onclick=()=>{
+  toast('<b>일괄 등록 시작</b> · 4개 타겟 × 12개 힌트 조합의 캠페인이 생성 대기열에 등록됐습니다. (데모)');
+};
+
+/* ---------- 토스트 ---------- */
+let toastT=null;
+function toast(html){
+  const t=document.getElementById('toast');t.innerHTML=html;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+/* ---------- 초기 구동 ---------- */
+function bootDash(){buildMap();runCounters();drawMini();buildComp();startDashLog();}
+bootDash();
+</script>
+</body>
+</html>
