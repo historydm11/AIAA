@@ -371,6 +371,7 @@ document.querySelectorAll('.nav button').forEach(b=>{
     document.getElementById('vTitle').textContent=titles[b.dataset.v];
     if(b.dataset.v==='dash')bootDash();
     if(b.dataset.v==='plan'){buildPlanMap();}
+    history.replaceState(null,'','#'+b.dataset.v);
   };
 });
 
@@ -498,7 +499,10 @@ function toast(html){
 
 /* ---------- 초기 구동 ---------- */
 function bootDash(){buildMap();runCounters();drawMini();buildComp();startDashLog();}
-bootDash();
+/* 해시 라우팅: 새로고침 시 현재 화면 유지 (#dash / #plan) */
+const h=location.hash.replace('#','');
+if(h==='plan'){document.querySelector('.nav button[data-v="plan"]').onclick();}
+else{bootDash();}
 </script>
 </body>
 </html>
